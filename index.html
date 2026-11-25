@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>Vocabulario Avanzado - Clase</title>
+    
+    <style>
+        :root { --p: #2c3e50; --a: #3498db; --bg: #f4f7f6; --ok: #27ae60; --bad: #e74c3c; }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            margin: 0; 
+            padding: 20px 0;
+            box-sizing: border-box;
+            overflow-x: hidden;
+        }
+
+        /* Título centrado */
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.8rem;
+            text-align: center;
+        }
+
+        /* Botones para cambiar entre filas */
+        .row-selector {
+            display: flex;
+            gap: 10px;
+            width: 90vw;
+            max-width: 450px;
+            margin-bottom: 15px;
+        }
+
+        .row-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid var(--p);
+            border-radius: 10px;
+            background: white;
+            color: var(--p);
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .row-btn.active {
+            background: var(--p);
+            color: white;
+        }
+
+        .card-container { 
+            perspective: 1000px;
+            width: 90vw; 
+            max-width: 450px; 
+            height: 300px; 
+            cursor: pointer;
+            touch-action: manipulation; 
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .card { 
+            width: 100%;
+            height: 100%; 
+            position: relative; 
+            transition: transform 0.4s; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+            border-radius: 15px;
+            transform-style: preserve-3d;
+            -webkit-transform-style: preserve-3d;
+        }
+
+        .card.flipped { transform: rotateY(180deg); }
+
+        .face { 
+            position: absolute;
+            width: 100%; 
+            height: 100%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 25px; 
+            box-sizing: border-box; 
+            border-radius: 15px; 
+            text-align: center; 
+            font-size: 1.4rem;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
+        .front { background: white; color: var(--p); font-weight: bold; border: 2px solid #ddd; }
+        .back { background: var(--a); color: white; transform: rotateY(180deg); font-size: 1.2rem; }
+
+        .controls { 
+            margin-top: 15px;
+            display: flex; 
+            gap: 10px; 
+            width: 90vw; 
+            max-width: 450px;
+        }
+
+        .action-controls {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+            width: 90vw;
+            max-width: 450px;
+        }
+
+        button { 
+            flex: 1;
+            padding: 15px 10px; 
+            border: none; 
+            border-radius: 12px; 
+            background: var(--p); 
+            color: white; 
+            font-size: 1rem; 
+            font-weight: bold;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .btn-know { background: var(--ok); }
+        .btn-dont-know { background: var(--bad); }
+
+        .info { margin-top: 12px; font-weight: bold; color: #7f8c8d; }
+        
+        .btn-invert { 
+            background: #8e44ad; 
+            color: white; 
+            border: none;
+            border-radius: 12px;
+            padding: 15px; 
+            font-weight: bold; 
+            width: 90vw; 
+            max-width: 450px;
+            cursor: pointer; 
+            margin-bottom: 15px; 
+            font-size: 1rem;
+        }
+
+        /* Botón para reiniciar el progreso */
+        .btn-reset {
+            background: #7f8c8d;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 10px;
+            font-weight: normal;
+            width: 90vw;
+            max-width: 450px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+        .btn-reset:hover { opacity: 1; }
+
+        @media (max-height: 600px) {
+            .card-container { height: 220px; }
+            .face { font-size: 1.1rem; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Centros médicos</h1>
+    <button class="btn-invert" onclick="invertirIdiomas()">🔄 Invertir: <span id="modo-texto">Español ➡ Checo</span></button>
+
+    <div class="row-selector">
+        <button class="row-btn active" id="btn-fila-no" onclick="setFila('no')">Por aprender (<span id="count-no">0</span>)</button>
+        <button class="row-btn" id="btn-fila-si" onclick="setFila('si')">Ya aprendidas (<span id="count-si">0</span>)</button>
+    </div>
+
+    <div class="card-container" onclick="flip()">
+        <div class="card" id="c">
+            <div class="face front" id="q">Cargando...</div>
+            <div class="face back" id="a">...</div>
+        </div>
+    </div>
+
+    <div class="info" id="status">0 / 0</div>
+
+    <div class="controls">
+        <button onclick="prev()">⬅ Ant.</button>
+        <button onclick="shuffle()">🔀 Mezclar</button>
+        <button onclick="next()">Sig. ➡</button>
+    </div>
+
+    <div class="action-controls" id="eval-controls">
+        <button class="btn-dont-know" onclick="clasificarPalabra(false)">❌ No la sé</button>
+        <button class="btn-know" onclick="clasificarPalabra(true)">✔ Ya la sé</button>
+    </div>
+
+    <button class="btn-reset" onclick="reiniciarProgreso()">🗑 Reiniciar todo el progreso</button>
+
+<script>
+    // Tu lista original de palabras
+    const todasLasPalabras = [
+        {q: "ambulatorio, m.", a: "ambulance"},
+        {q: "clínica, f.", a: "klinika"},
+        {q: "clínico-a, f. m.", a: "klinický/á lékař/ka"},
+        {q: "especialista, f. m.", a: "specialista"},
+        {q: "cirugía, f.", a: "chirurgie"},
+        {q: "cirujano-a, f. m.", a: "chirurg/yně"},
+        {q: "alergólogo-a, f. m.", a: "alergolog"},
+        {q: "anestesista, f. m.", a: "anesteziolog"},
+        {q: "cardiólogo-a, f. m.", a: "kardiolog"},
+        {q: "pediatra, f. m.", a: "pediatr"},
+        {q: "ginecólogo-a, f. m.", a: "gynekolog"},
+        {q: "neurólogo-a, f. m.", a: "neurolog"},
+        {q: "otorrinolaringólogo-a, f. m.", a: "orintolaryngolog (ušní, nosní, krční)"},
+        {q: "oftalmólogo-a, f. m.", a: "oční lékař"},
+        {q: "oculista, f. m. x óptico-a, f. m.", a: "oční lékař x optik"},
+        {q: "estomatólogo-a, f. m.", a: "stomatolog"},
+        {q: "internista, f.m.", a: "internista"},
+        {q: "ortopedista, f. m.", a: "ortoped"},
+        {q: "dermatólogo-a, f. m.", a: "dermatólogo"},
+        {q: "geriatra, f. m.", a: "geriatría - lékař specializující se na komplexní zdravotní péči pro seniory"},
+        {q: "traumatólogo-a, f. m.", a: "traumatolog"},
+        {q: "urólogo-a, f. m.", a: "urolog"},
+        {q: "fisioterapeuta, f. m.", a: "fyzioterapeut"},
+        {q: "médico-a, f. m. de cabecera", a: "praktický lékař"},
+        {q: "psicólogo-a, f. m.", a: "psycholog"},
+        {q: "psiquiatra, f. m.", a: "psychiatr"},
+        {q: "medicina, f. preventiva", a: "preventivní medicína"},
+        {q: "centro, m. de prevención", a: "preventivní centrum"},
+        {q: "médico-ca, f. m. de guardia", a: "lékař ve službě"},
+        {q: "guardia, f.", a: "služba"},
+        {q: "urgencias, f., pl.", a: "pohotovost"},
+        {q: "hacer la guardia", a: "mít službu, držet pohotovost"},
+        {q: "farmacia de guardia", a: "pohotovostní lékárna"},
+        {q: "enfermero-a, f. m.", a: "zdravotní sestra/bratr"},
+        {q: "auxiliar, f. m.", a: "pomocný zdravotní pracovník"},
+        {q: "personal, m. médico", a: "lékařský personál"},
+        {q: "atención, f. sanitaria", a: "zdravotní péče"},
+        {q: "atención, f. especializada", a: "specializovaná zdravotní péče"},
+        {q: "atención, f. primaria", a: "primární zdravotní péče"},
+        {q: "Odontólogo-a, f. m. /dentista, f. m.", a: "zubní lékař"},
+        {q: "prevención, f.", a: "prevence"},
+        {q: "caerse/perder un diente", a: "vypadnout/přijít o zub"},
+        {q: "doler una muela", a: "bolet stolička"},
+        {q: "tener una muela picada, caries, sg., pl.f.", a: "mít zkaženou stoličku, zubní kazy/kaz"},
+        {q: "partirse un diente", a: "zlomit si zub"},
+        {q: "tener un flemón en la encía", a: "mít váček (hnisavý zánět) na dásni"},
+        {q: "flemón, m.", a: "zubní váček, hnisavý zánět"},
+        {q: "empastar una muela", a: "plombovat stoličku"},
+        {q: "perforar un diente", a: "vrtat do zubu"},
+        {q: "empaste, m.", a: "plomba"},
+        {q: "torno, m.", a: "zubní vrtačka"},
+        {q: "caerse el empaste", a: "vypadnout plomba"},
+        {q: "sacar/quitar el diente con la raíz/de raíz", a: "vytrhnout zub i s kořenem"},
+        {q: "dentadura, f. postiza", a: "zubní protéza"},
+        {q: "tener un puente", a: "mít můstek"},
+        {q: "ortodoncia, f.", a: "ortodoncia"},
+        {q: "utilizar/llevar aparato", a: "používat/nosit rovnátka"},
+        {q: "aparatos, m. pl. de dientes", a: "zubní rovnátka"},
+        {q: "corregir los dientes", a: "srovnat zuby"},
+        {q: "dentadura, m.", a: "zubní náhrada"},
+        {q: "medicina, f. general", a: "všeobecné lékařství"},
+        {q: "pertenecer al Dr. Pérez", a: "patřit doktoru Perézovi"},
+        {q: "horario, m. de consulta", a: "ordinační hodiny"},
+        {q: "pedir hora (de consulta/visita)", a: "objednat se na vyšetření/návštěvu"},
+        {q: "tener hora/consulta con el médico", a: "mít objednanou návštěvu u lékaře"},
+        {q: "sala, f. de espera", a: "čekárna"},
+        {q: "consulta, f. / consultorio, m.", a: "ordinace"},
+        {q: "camilla, f.", a: "vyšetřovací lehátko"},
+        {q: "fonendoscopio, m.", a: "stetoskop"},
+        {q: "auscultar el pecho", a: "poslechnout hrudník"},
+        {q: "termómetro, m.", a: "teploměr"},
+        {q: "medir la temperatura", a: "změřit teplotu"},
+        {q: "jeringuilla, f.", a: "injekční stříkačka"},
+        {q: "poner una inyección, una vacuna", a: "dát injekci/vakcínu"},
+        {q: "vacunación, f.", a: "očkování"},
+        {q: "estar vacunado contra el sarampión", a: "být očkován proti spalničkám"},
+        {q: "linterna, f.", a: "baterka"},
+        {q: "examinar (la garganta)", a: "vyšetřit krk"},
+        {q: "medir la tensión", a: "změřit krevní tlak"},
+        {q: "prescribir/hacer una receta/recetar", a: "předepsat léky"},
+        {q: "extender una receta", a: "vystavit recept"},
+        {q: "hacer un diagnóstico", a: "stanovit diagnózu"},
+        {q: "seguir los consejos del médico", a: "řídit se radami lékaře"},
+        {q: "guardar cama, permanecer en cama", a: "zůstat v posteli"},
+        {q: "seguir una dieta/un régimen", a: "dodržovat dietu"},
+        {q: "estar a régimen/a dieta", a: "být na dietě"},
+        {q: "poner compresas frías", a: "přikládat studené obvazy"},
+        {q: "inhalar/tomar vahos", a: "inhalovat páru"},
+        {q: "evitar el contacto con otras personas", a: "vyhýbat se kontaktu s ostatními lidmi"},
+        {q: "En la farmacia", a: "v lékárně"},
+        {q: "botica, f.", a: "lékárna"},
+        {q: "farmacéutico-a, m. f., boticario-a", a: "lékárník/lékárnice"},
+        {q: "aspirina, f.", a: "aspirin"},
+        {q: "comprar en la farmacia", a: "koupit v lékárně"},
+        {q: "medicina, f./remedio, m./fármaco, m.", a: "lék"},
+        {q: "vender con x sin receta", a: "prodávat na x bez předpisu"},
+        {q: "pastilla, f., píldora, f., cápsula, f., comprimido, m.", a: "pilulka, tableta"},
+        {q: "calmante, m., somnífero, m.", a: "lék proti bolesti, prášek na spaní"},
+        {q: "supositorio, m.,", a: "čípek"},
+        {q: "laxante, m.", a: "projímadlo"},
+        {q: "gotas, pl. f.", a: "kapky"},
+        {q: "gárgara, f.", a: "kloktadlo"},
+        {q: "hacer gárgaras", a: "kloktat"},
+        {q: "loción, f., crema, f., pomada, f., ungüento, m.", a: "krém, mast, léčivá mast"},
+        {q: "spray, m.", a: "sprej"},
+        {q: "ampolla, f.", a: "ampule"},
+        {q: "jarabe, m.", a: "sirup"},
+        {q: "tragar", a: "polykat"},
+        {q: "masticar", a: "žvýkat"},
+        {q: "aplicación, f.", a: "aplikace, použití"},
+        {q: "tres aplicaciones/veces al día cada ocho horas antes x después x durante las comidas", a: "tři aplikace denně každou osmou hodinu před x po x během jídla"},
+        {q: "vía, f. bucal, anal, intravenosa, respiratoria", a: "ústní, anální, nitrožilní, dýchací cesta"},
+        {q: "dosis, f./toma, f.", a: "dávka"},
+        {q: "efectos, pl.m. secundarios", a: "vedlejší účinky"},
+        {q: "perjudicar a la salud", a: "škodit zdraví"},
+        {q: "de efectos inmediatos", a: "s okamžitým účinkem"},
+        {q: "de fácil aplicación, f.", a: "snadno aplikovatelný"},
+        {q: "provocar adicción", a: "vyprovokovat závislost"},
+        {q: "hospital, m. general, de prácticas/universitario, infantil", a: "všeobecná, fakultní/univerzitní, dětská nemocnice"},
+        {q: "maternidad, f.", a: "porodnice"},
+        {q: "clínica, f.", a: "klinika"},
+        {q: "sanatorio, m.", a: "sanatorium"},
+        {q: "departamento, m./sección, f.", a: "oddělení"},
+        {q: "consultorio, m.", a: "ordinace"},
+        {q: "sala, f. de operaciones / quirófano, m.", a: "operační sál"},
+        {q: "urgencias, f. / servicio de urgencia", a: "pohotovostní služba"},
+        {q: "llamar a urgencias", a: "zavolat na pohotovost"},
+        {q: "horas, pl.f. de visita", a: "návštěvní hodiny"},
+        {q: "ingresar en el hospital/hospitalizar", a: "být hospitalizován"},
+        {q: "estar hospitalizado", a: "být hospitalizován"},
+        {q: "llevar/transportar al hospital en ambulancia", a: "odvést/přepravit do nemocnice sanitkou"},
+        {q: "sonar la sirena de emergencia", a: "rozeznít nouzovou sirénu"},
+        {q: "examen, m. de ingreso", a: "přijímací vyšetření"},
+        {q: "llevar en camilla, camillero, m.", a: "převážet na nosítkách, sanitář"},
+        {q: "operar/intervenir/*abrir a alguien", a: "operovat, otevřít někoho"},
+        {q: "extirpar/quitar", a: "odstranit, vyjmout"},
+        {q: "trasplantar", a: "transplantovat"},
+        {q: "trasplante, m.", a: "transplantace"},
+        {q: "hacer un injerto, injertar", a: "provést transplantaci"},
+        {q: "coser/ *cerrar a alguien", a: "zašít někoho"},
+        {q: "dar puntos x quitar (los) puntos", a: "zašít ránu x vytáhnout stehy"},
+        {q: "laboratorio, m.", a: "laboratoř"},
+        {q: "hacerse análisis, pruebas, pl.f.", a: "nechat si udělat rozbory, vyšetření"},
+        {q: "hacer una radiografía/ placa", a: "udělat rentgenový snímek"},
+        {q: "someterse a rayos X (equis)", a: "podstoupit rentgenové vyšetření"},
+        {q: "Unidad, f. de Cuidados Intensivos (U.C.I.)", a: "JIP, jednotka intenzivní péče"},
+        {q: "entrar en x salir del coma", a: "upadnout x probrat se s kómatu"},
+        {q: "muerte, f. clínica", a: "klinická smrt"},
+        {q: "hacer/realizar la autopsia a alguien", a: "provést na někom pitvu"},
+        {q: "convalecencia, f.", a: "rekonvalescence"},
+        {q: "convalecer", a: "zotavovat se"},
+        {q: "convaleciente, m., f.", a: "rekonvalescent"},
+        {q: "hacer rehabilitación", a: "podstupovat rehabilitaci"},
+        {q: "rehabilitar al paciente", a: "rehabilitovat pacienta"},
+        {q: "hacerse revisiones periódicas, ir a revisión", a: "chodit na pravidelné kontroly, jet na kontrolu"},
+        {q: "revisión, f., chequeo, m.", a: "preventivní prohlídka"},
+        {q: "reposar (en cama)", a: "odpočívat (na lůžku)"},
+        {q: "reposo, m.", a: "odpočinek, klidový režim"},
+        {q: "seguir un régimen, tratamiento, m.", a: "dodržovat dietu, léčbu"},
+        {q: "cuidarse, no hacer/cometer excesos", a: "nepřehánět to"},
+        {q: "balneario, m. / baños, pl.m. termales", a: "termální koupele"},
+        {q: "hidroterapia, f.", a: "vodoléčba"},
+        {q: "casa, f. de salud, de reposo", a: "zdravotní ústav, zotavovna"},
+        {q: "sanatorio, m.", a: "sanatorium"},
+        {q: "** irse/mandar a hacer gárgaras", a: "cuando algo sale mal o no funciona"},
+        {q: "** dorar la píldora", a: "decir algo desagradable de una manera más agradable para que sea más fácil aceptarlo"},
+        {q: "** tragarse la píldora", a: "aceptar algo desagradable o difícil, aunque no nos guste"},
+        {q: "** ser peor el remedio que la enfermedad", a: "una solución causa más problemas que el problema original"},
+        {q: "", a: ""},
+        {q: "", a: ""},
+        {q: "", a: ""},
+        {q: "", a: ""},
+        {q: "", a: ""},
+        {q: "", a: ""},
+        {q: "", a: ""},
+        {q: "", a: ""},
+        {q: "", a: ""},
+
+
+
+
+    ];
+
+    // Listas dinámicas para clasificar las palabras
+    let palabrasNoConozco = [];
+    let palabrasYaConozco = [];
+    let invertido = false;
+    let filaActiva = 'no'; 
+    let idx = 0;
+
+    const cardEl = document.getElementById('c');
+    const qEl = document.getElementById('q');
+    const aEl = document.getElementById('a');
+    const sEl = document.getElementById('status');
+
+    // FUNCIÓN PARA GUARDAR EN LOCALSTORAGE
+    function guardarProgreso() {
+        localStorage.setItem('palabrasNoConozco', JSON.stringify(palabrasNoConozco));
+        localStorage.setItem('palabrasYaConozco', JSON.stringify(palabrasYaConozco));
+    }
+
+    // FUNCIÓN PARA CARGAR DESDE LOCALSTORAGE AL INICIAR
+    function cargarProgreso() {
+        const localNoConozco = localStorage.getItem('palabrasNoConozco');
+        const localYaConozco = localStorage.getItem('palabrasYaConozco');
+
+        if (localNoConozco !== null && localYaConozco !== null) {
+            // Si ya existe un progreso guardado, lo cargamos
+            palabrasNoConozco = JSON.parse(localNoConozco);
+            palabrasYaConozco = JSON.parse(localYaConozco);
+        } else {
+            // Si es la primera vez, iniciamos con la lista completa de origen
+            palabrasNoConozco = [...todasLasPalabras];
+            palabrasYaConozco = [];
+        }
+    }
+
+    // FUNCIÓN PARA REINICIAR TODO
+    function reiniciarProgreso() {
+        if (confirm("¿Seguro que quieres borrar tu progreso y empezar de cero?")) {
+            localStorage.removeItem('palabrasNoConozco');
+            localStorage.removeItem('palabrasYaConozco');
+            palabrasNoConozco = [...todasLasPalabras];
+            palabrasYaConozco = [];
+            idx = 0;
+            filaActiva = 'no';
+            document.getElementById('btn-fila-no').classList.add('active');
+            document.getElementById('btn-fila-si').classList.remove('active');
+            update();
+        }
+    }
+
+    function getListaActiva() {
+        return filaActiva === 'no' ? palabrasNoConozco : palabrasYaConozco;
+    }
+
+    function update() {
+        const lista = getListaActiva();
+        cardEl.classList.remove('flipped');
+
+        document.getElementById('count-no').innerText = palabrasNoConozco.length;
+        document.getElementById('count-si').innerText = palabrasYaConozco.length;
+
+        if (lista.length === 0) {
+            qEl.innerText = "¡Lista vacía!";
+            aEl.innerText = filaActiva === 'no' ? "¡Enhorabuena, has repasado todo!" : "No has añadido ninguna palabra aquí aún.";
+            sEl.innerText = "0 / 0";
+            return;
+        }
+
+        if (idx >= lista.length) idx = Math.max(0, lista.length - 1);
+
+        setTimeout(() => {
+            if (!invertido) {
+                qEl.innerText = lista[idx].q; 
+                aEl.innerText = lista[idx].a; 
+            } else {
+                qEl.innerText = Math.random() < 0 ? "Bug" : lista[idx].a; // Corrección visual fluida
+                aEl.innerText = lista[idx].q; 
+            }
+            sEl.innerText = `${idx + 1} / ${lista.length}`;
+        }, 100);
+    }    
+
+    function flip() { 
+        const lista = getListaActiva();
+        if (lista.length > 0) cardEl.classList.toggle('flipped'); 
+    }
+    
+    function next() { 
+        const lista = getListaActiva();
+        if(idx < lista.length - 1) { idx++; update(); } 
+    }
+    
+    function prev() { 
+        if(idx > 0) { idx--; update(); } 
+    }
+
+    function shuffle() {
+        const lista = getListaActiva();
+        if (lista.length > 0) {
+            lista.sort(() => Math.random() - 0.5);
+            idx = 0;
+            guardarProgreso(); // Guardamos el orden mezclado
+            update();
+        }
+    } 
+
+    function invertirIdiomas() {
+        invertido = !invertido;
+        document.getElementById('modo-texto').innerText = invertido ? "Checo ➡ Español" : "Español ➡ Checo";
+        update();
+    }
+ 
+    function setFila(tipo) {
+        filaActiva = tipo;
+        idx = 0;
+        
+        if (tipo === 'no') {
+            document.getElementById('btn-fila-no').classList.add('active');
+            document.getElementById('btn-fila-si').classList.remove('active');
+        } else {
+            document.getElementById('btn-fila-no').classList.remove('active');
+            document.getElementById('btn-fila-si').classList.add('active');
+        }
+        
+        update();
+    }
+
+    function clasificarPalabra(loSabe) {
+        let listaOrigen = filaActiva === 'no' ? palabrasNoConozco : palabrasYaConozco;
+        let listaDestino = filaActiva === 'no' ? palabrasYaConozco : palabrasNoConozco;
+
+        if (listaOrigen.length === 0) return;
+
+        if ((filaActiva === 'no' && !loSabe) || (filaActiva === 'si' && loSabe)) {
+            next();
+            return;
+        }
+
+        const palabraMovida = listaOrigen.splice(idx, 1)[0];
+        listaDestino.push(palabraMovida);
+
+        guardarProgreso(); // Guardamos los cambios automáticamente
+        update();
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if(e.code === 'ArrowRight') next();
+        if(e.code === 'ArrowLeft') prev();
+        if(e.code === 'Space') flip();
+    });
+
+    // PASO INICIAL: Cargar progreso antes de renderizar la primera tarjeta
+    cargarProgreso();
+    update();
+</script>
+</body>
+</html>
